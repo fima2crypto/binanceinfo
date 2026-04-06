@@ -2,8 +2,8 @@ name: Fetch Binance Data
 
 on:
   schedule:
-    - cron: "0 * * * *"   # mỗi 1 giờ
-  workflow_dispatch:        # cho phép chạy tay
+    - cron: "0 1 * * *"   # 8:00 sáng giờ VN
+  workflow_dispatch:
 
 jobs:
   fetch:
@@ -15,6 +15,16 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install Cloudflare WARP
+        run: |
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ jammy main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+          sudo apt-get update && sudo apt-get install -y cloudflare-warp
+          warp-cli --accept-tos register
+          warp-cli --accept-tos connect
+          sleep 5
+          curl -s https://cloudflare.com/cdn-cgi/trace | grep ip
+
       - name: Install deps
         run: pip install requests python-dotenv
 
@@ -23,8 +33,8 @@ jobs:
           BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
           BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
         run: |
-          python -c "import os; print('KEY exists:', bool(os.getenv('BINANCE_API_KEY'))); print('SECRET exists:', bool(os.getenv('BINANCE_API_SECRET')))"
-      
+          python -c "import os; print('KEY:', bool(os.getenv('BINANCE_API_KEY'))); print('SECRET:', bool(os.getenv('BINANCE_API_SECRET')))"
+
       - name: Run fetch
         env:
           BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
